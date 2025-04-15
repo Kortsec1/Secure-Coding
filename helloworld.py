@@ -1,7 +1,7 @@
 import sys
 
 def helloworld(command):
-    print("Hello World!")
+    print("hello World!")
     print("You entered: " + command)
 
 if __name__ == "__main__":
