@@ -125,6 +125,19 @@ def dashboard():
     all_products = cursor.fetchall()
     return render_template('dashboard.html', products=all_products, user=current_user)
 
+# 사용자 검색
+@app.route('/search_user', methods=['POST'])
+def search_user():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    query = request.form.get('query')
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM user WHERE username LIKE ?", ('%' + query + '%',))
+    results = cursor.fetchall()
+    return render_template('search_user.html', users=results, query=query)
+
 # 프로필 페이지: bio 업데이트 가능
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
