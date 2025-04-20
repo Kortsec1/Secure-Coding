@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}사용자 검색 결과{% endblock %}
+{% block content %}
+<h2>"{{ query }}" 검색 결과</h2>
+<ul>
+  {% for user in users %}
+    <li>{{ user['username'] }} - {{ user['bio'] or "소개 없음" }}</li>
+  {% else %}
+    <li>검색 결과가 없습니다.</li>
+  {% endfor %}
+</ul>
+<p><a href="{{ url_for('dashboard') }}">← 대시보드로 돌아가기</a></p>
+{% endblock %}
