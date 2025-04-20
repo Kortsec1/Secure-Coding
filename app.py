@@ -78,8 +78,7 @@ def register():
             flash('이미 존재하는 사용자명입니다.')
             return redirect(url_for('register'))
         user_id = str(uuid.uuid4())
-        cursor.execute("INSERT INTO user (id, username, password) VALUES (?, ?, ?)",
-                       (user_id, username, password))
+        cursor.execute("INSERT INTO user (id, username, password) VALUES (?, ?, ?)", (user_id, username, password))
         db.commit()
         flash('회원가입이 완료되었습니다. 로그인 해주세요.')
         return redirect(url_for('login'))
