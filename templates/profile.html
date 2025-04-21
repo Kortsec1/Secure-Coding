@@ -8,4 +8,13 @@
   <textarea name="bio" rows="4" cols="50">{{ user.bio or '' }}</textarea><br>
   <button type="submit">프로필 업데이트</button>
 </form>
+
+<hr>
+
+<h3>비밀번호 변경</h3>
+<form method="POST" action="{{ url_for('profile') }}">
+    <input type="password" name="current_password" placeholder="현재 비밀번호" required><br>
+    <input type="password" name="new_password" placeholder="새 비밀번호" required><br>
+    <button type="submit" name="action" value="update_password">비밀번호 변경</button>
+</form>
 {% endblock %}

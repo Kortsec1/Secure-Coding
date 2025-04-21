@@ -125,7 +125,7 @@ def dashboard():
     all_products = cursor.fetchall()
     return render_template('dashboard.html', products=all_products, user=current_user)
 
-# 사용자 검색
+# 사용자 검색 페이지
 @app.route('/user_search', methods=['GET', 'POST'])
 def user_search():
     if 'user_id' not in session:
@@ -142,19 +142,38 @@ def user_search():
 
     return render_template('user_search.html', query=query, results=results)
 
-# 프로필 페이지: bio 업데이트 가능
+# 프로필 페이지: bio 업데이트 가능, 비밀번호 변경 기능
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     db = get_db()
     cursor = db.cursor()
+
     if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'update_password':
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            
+            # 현재 비밀번호 확인
+            cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+            user = cursor.fetchone()
+            if user and user['password'] == current_password:
+                cursor.execute("UPDATE user SET password = ? WHERE id = ?", (new_password, session['user_id']))
+                db.commit()
+                flash('비밀번호가 성공적으로 변경되었습니다.')
+            else:
+                flash('현재 비밀번호가 일치하지 않습니다.')
+            return redirect(url_for('profile'))
+
         bio = request.form.get('bio', '')
         cursor.execute("UPDATE user SET bio = ? WHERE id = ?", (bio, session['user_id']))
         db.commit()
         flash('프로필이 업데이트되었습니다.')
         return redirect(url_for('profile'))
+
     cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
     current_user = cursor.fetchone()
     return render_template('profile.html', user=current_user)
