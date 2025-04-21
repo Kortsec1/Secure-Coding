@@ -127,7 +127,7 @@ def dashboard():
 
 # 사용자 검색
 @app.route('/user_search', methods=['GET', 'POST'])
-def user_search_page():
+def user_search():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
