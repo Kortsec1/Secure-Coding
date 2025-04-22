@@ -3,6 +3,7 @@ import uuid
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send, join_room, leave_room, emit
 from flask_wtf import CSRFProtect
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -11,6 +12,14 @@ socketio = SocketIO(app)
 csrf = CSRFProtect()
 csrf.init_app(app)
 app.secret_key = 'super-secret-key'
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,      # JavaScript에서 쿠키 접근 차단
+    SESSION_COOKIE_SECURE=True,        # HTTPS 환경에서만 전송
+    SESSION_COOKIE_SAMESITE='Lax'      # 크로스 사이트 요청 제한
+)
+if os.environ.get("FLASK_ENV") == "development":
+    app.config['SESSION_COOKIE_SECURE'] = False
 
 # 데이터베이스 연결 관리: 요청마다 연결 생성 후 사용, 종료 시 close
 def get_db():
