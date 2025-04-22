@@ -4,6 +4,11 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_socketio import SocketIO, send, join_room, leave_room, emit
 from flask_wtf import CSRFProtect
 import os
+import re
+
+def sanitize_input(text):
+    # 스크립트 태그 제거
+    return re.sub(r'<.*?>', '', text)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -81,7 +86,7 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
+        username = sanitize_input(request.form['username'])
         password = request.form['password']
         db = get_db()
         cursor = db.cursor()
@@ -248,7 +253,7 @@ def profile():
                 flash('현재 비밀번호가 일치하지 않습니다.')
             return redirect(url_for('profile'))
 
-        bio = request.form.get('bio', '')
+        bio = sanitize_input(request.form.get('bio', ''))
         cursor.execute("UPDATE user SET bio = ? WHERE id = ?", (bio, session['user_id']))
         db.commit()
         flash('프로필이 업데이트되었습니다.')
@@ -264,8 +269,8 @@ def new_product():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST':
-        title = request.form['title']
-        description = request.form['description']
+        title = sanitize_input(request.form['title'])
+        description = sanitize_input(request.form['description'])
         price = request.form['price']
         db = get_db()
         cursor = db.cursor()
@@ -360,7 +365,7 @@ def report():
         return redirect(url_for('login'))
     if request.method == 'POST':
         target_id = request.form['target_id']
-        reason = request.form['reason']
+        reason = sanitize_input(request.form['reason'])
         db = get_db()
         cursor = db.cursor()
         report_id = str(uuid.uuid4())
@@ -413,7 +418,8 @@ def on_join(data):
 def handle_private_message(data):
     room = data['room']
     sender_id = data.get('sender_id')
-    emit('chat_message', {'message': data['message'], 'sender_id': sender_id}, to=data['room'])
+    sanitized = sanitize_input(data['message'])
+    emit('chat_message', {'message': sanitized, 'sender_id': sender_id}, to=data['room'])
 
 if __name__ == '__main__':
     init_db()  # 앱 컨텍스트 내에서 테이블 생성
