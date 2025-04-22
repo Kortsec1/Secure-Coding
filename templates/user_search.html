@@ -14,6 +14,11 @@
       <li>
         <strong>{{ user.username }}</strong> - {{ user.bio or "소개 없음" }}<br>
         <a href="{{ url_for('private_chat', target_user_id=user.id) }}">1:1 채팅</a>
+        {% if current_user and current_user['is_admin']|int == 1 %}
+          <form method="POST" action="{{ url_for('suspend_user', user_id=user['id']) }}" style="display:inline;">
+            <button type="submit">정지</button>
+          </form>
+        {% endif %}
       </li>
     {% else %}
       <li>검색 결과가 없습니다.</li>

@@ -94,6 +94,9 @@ def login():
         cursor = db.cursor()
         cursor.execute("SELECT * FROM user WHERE username = ? AND password = ?", (username, password))
         user = cursor.fetchone()
+        if user and user['is_suspended'] == 1:
+            flash('정지된 사용자입니다.')
+            return redirect(url_for('login'))
         if user:
             session['user_id'] = user['id']
             flash('로그인 성공!')
@@ -133,14 +136,43 @@ def user_search():
 
     query = None
     results = []
+    db = get_db()
+    cursor = db.cursor()
+
     if request.method == 'POST':
         query = request.form.get('query')
-        db = get_db()
-        cursor = db.cursor()
         cursor.execute("SELECT * FROM user WHERE username LIKE ?", ('%' + query + '%',))
         results = cursor.fetchall()
 
-    return render_template('user_search.html', query=query, results=results)
+    current_user = None
+    if 'user_id' in session:
+        cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+        current_user = cursor.fetchone()
+    return render_template('user_search.html', query=query, results=results, current_user=current_user)
+
+@app.route('/admin/suspend/<user_id>', methods=['POST'])
+def suspend_user(user_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+    current_user = cursor.fetchone()
+
+    if not current_user or int(current_user['is_admin'] if 'is_admin' in current_user.keys() else 0) != 1:
+        flash("관리자만 접근할 수 있습니다.")
+        return redirect(url_for('dashboard'))
+
+    if current_user['id'] == user_id:
+        flash("자기 자신은 정지할 수 없습니다.")
+        return redirect(url_for('user_search'))
+
+    cursor.execute("UPDATE user SET is_suspended = 1 WHERE id = ?", (user_id,))
+    db.commit()
+    flash("사용자를 정지시켰습니다.")
+    return redirect(url_for('user_search'))
 
 # 프로필 페이지: bio 업데이트 가능, 비밀번호 변경 기능
 @app.route('/profile', methods=['GET', 'POST'])
