@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ target_user.username }}님과의 채팅{% endblock %}
+{% block content %}
+<h2>{{ target_user.username }}님과의 채팅</h2>
+
+<div id="messages" style="border:1px solid #ccc; padding:10px; height:200px; overflow-y:auto;"></div>
+
+<form id="chat-form">
+    <input type="text" id="message-input" placeholder="메시지를 입력하세요" autocomplete="off">
+    <button type="submit">전송</button>
+</form>
+
+<script>
+const form = document.getElementById('chat-form');
+const input = document.getElementById('message-input');
+const messages = document.getElementById('messages');
+
+const socket = io();
+const room = "{{ room_id }}";
+socket.emit('join', { room: room });
+
+const myId = "{{ session['user_id'] }}";
+
+socket.on('chat_message', data => {
+    const msg = document.createElement('div');
+    const isMine = data.sender_id === myId;
+    msg.textContent = (isMine ? "나: " : "{{ target_user.username }}: ") + data.message;
+    msg.style.textAlign = isMine ? "right" : "left";
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
+});
+
+form.addEventListener('submit', e => {
+    e.preventDefault();
+    const msg = input.value;
+    if (msg.trim() !== '') {
+        socket.emit('private_message', { room: room, message: msg, sender_id: "{{ session['user_id'] }}" });
+        input.value = '';
+    }
+});
+</script>
+{% endblock %}

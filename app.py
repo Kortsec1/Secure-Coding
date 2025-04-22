@@ -1,7 +1,7 @@
 import sqlite3
 import uuid
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
-from flask_socketio import SocketIO, send
+from flask_socketio import SocketIO, send, join_room, leave_room, emit
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -279,11 +279,47 @@ def report():
         return redirect(url_for('dashboard'))
     return render_template('report.html')
 
+# 유저간 1대1 채팅
+@app.route('/chat/<target_user_id>')
+def private_chat(target_user_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    my_id = session['user_id']
+    if my_id == target_user_id:
+        flash('자기 자신과 채팅할 수 없습니다.')
+        return redirect(url_for('dashboard'))
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM user WHERE id = ?", (target_user_id,))
+    target_user = cursor.fetchone()
+    if not target_user:
+        flash('사용자를 찾을 수 없습니다.')
+        return redirect(url_for('dashboard'))
+
+    room_id = "-".join(sorted([my_id, target_user_id]))
+    return render_template('chat.html', room_id=room_id, target_user=target_user)
+
 # 실시간 채팅: 클라이언트가 메시지를 보내면 전체 브로드캐스트
 @socketio.on('send_message')
 def handle_send_message_event(data):
     data['message_id'] = str(uuid.uuid4())
     send(data, broadcast=True)
+
+# 유저간 1대1 채팅 방 생성
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    print(f"[JOIN] user joined room: {room}")
+    join_room(room)
+
+# 유저간 1대1 채팅
+@socketio.on('private_message')
+def handle_private_message(data):
+    room = data['room']
+    sender_id = data.get('sender_id')
+    emit('chat_message', {'message': data['message'], 'sender_id': sender_id}, to=data['room'])
 
 if __name__ == '__main__':
     init_db()  # 앱 컨텍스트 내에서 테이블 생성
