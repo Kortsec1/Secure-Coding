@@ -209,10 +209,15 @@ def view_product(product_id):
     if not product:
         flash('상품을 찾을 수 없습니다.')
         return redirect(url_for('dashboard'))
-    # 판매자 정보 조회
+
     cursor.execute("SELECT * FROM user WHERE id = ?", (product['seller_id'],))
     seller = cursor.fetchone()
-    return render_template('view_product.html', product=product, seller=seller)
+
+    current_user = None
+    if 'user_id' in session:
+        cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+        current_user = cursor.fetchone()
+    return render_template('view_product.html', product=product, seller=seller, current_user=current_user)
 
 # 상품 수정하기
 @app.route('/product/edit/<product_id>', methods=['GET', 'POST'])
@@ -245,18 +250,27 @@ def edit_product(product_id):
 def delete_product(product_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     db = get_db()
     cursor = db.cursor()
+
+    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+    current_user = cursor.fetchone()
+
     cursor.execute("SELECT * FROM product WHERE id = ?", (product_id,))
     product = cursor.fetchone()
 
-    if not product or product['seller_id'] != session['user_id']:
-        flash('삭제 권한이 없습니다.')
+    if not product:
+        flash("상품을 찾을 수 없습니다.")
         return redirect(url_for('dashboard'))
 
-    cursor.execute("DELETE FROM product WHERE id = ?", (product_id,))
-    db.commit()
-    flash('상품이 삭제되었습니다.')
+    if product['seller_id'] == current_user['id'] or current_user['is_admin'] == 1:
+        cursor.execute("DELETE FROM product WHERE id = ?", (product_id,))
+        db.commit()
+        flash("상품이 삭제되었습니다.")
+    else:
+        flash("삭제 권한이 없습니다.")
+
     return redirect(url_for('dashboard'))
 
 # 신고하기
