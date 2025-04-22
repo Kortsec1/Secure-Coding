@@ -150,6 +150,7 @@ def user_search():
         current_user = cursor.fetchone()
     return render_template('user_search.html', query=query, results=results, current_user=current_user)
 
+# 악성 유저 휴면
 @app.route('/admin/suspend/<user_id>', methods=['POST'])
 def suspend_user(user_id):
     if 'user_id' not in session:
@@ -172,6 +173,32 @@ def suspend_user(user_id):
     cursor.execute("UPDATE user SET is_suspended = 1 WHERE id = ?", (user_id,))
     db.commit()
     flash("사용자를 정지시켰습니다.")
+    return redirect(url_for('user_search'))
+
+# 악성 유저 휴면 해제
+@app.route('/admin/unsuspend/<user_id>', methods=['POST'])
+def unsuspend_user(user_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+    current_user = cursor.fetchone()
+
+    is_admin = int(current_user['is_admin']) if 'is_admin' in current_user.keys() else 0
+    if not current_user or is_admin != 1:
+        flash("관리자만 접근할 수 있습니다.")
+        return redirect(url_for('dashboard'))
+
+    if current_user['id'] == user_id:
+        flash("자기 자신은 해제할 수 없습니다.")
+        return redirect(url_for('user_search'))
+
+    cursor.execute("UPDATE user SET is_suspended = 0 WHERE id = ?", (user_id,))
+    db.commit()
+    flash("사용자 정지가 해제되었습니다.")
     return redirect(url_for('user_search'))
 
 # 프로필 페이지: bio 업데이트 가능, 비밀번호 변경 기능
