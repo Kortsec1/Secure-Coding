@@ -100,24 +100,32 @@ def register():
 # 로그인
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if 'login_attempts' not in session:
+        session['login_attempts'] = 0
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("SELECT * FROM user WHERE username = ? AND password = ?", (username, password))
+        cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
         user = cursor.fetchone()
-        if user and user['is_suspended'] == 1:
-            flash('정지된 사용자입니다.')
-            return redirect(url_for('login'))
-        if user:
+
+        # 평문 비교만
+        if user and password == user['password']:
             session['user_id'] = user['id']
-            flash('로그인 성공!')
+            session.pop('login_attempts', None)
             return redirect(url_for('dashboard'))
         else:
-            flash('아이디 또는 비밀번호가 올바르지 않습니다.')
+            session['login_attempts'] += 1
+            if session['login_attempts'] >= 5:
+                flash("로그인 시도 횟수를 초과했습니다. 잠시 후 다시 시도하세요.")
+                return redirect(url_for('login'))
+            flash("아이디 또는 비밀번호가 잘못되었습니다.")
             return redirect(url_for('login'))
-    return render_template('login.html')
+
+    return render_template("login.html")
 
 # 로그아웃
 @app.route('/logout')
