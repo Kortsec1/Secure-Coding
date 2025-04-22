@@ -12,6 +12,7 @@
 {% endif %}
 {% if current_user and (current_user['id'] == product['seller_id'] or current_user['is_admin']|int == 1) %}
     <form method="POST" action="{{ url_for('delete_product', product_id=product.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit">삭제</button>
     </form>
 {% endif %}

@@ -3,6 +3,7 @@
 {% block content %}
 <h2>사용자 검색</h2>
 <form method="POST" action="{{ url_for('user_search') }}" style="margin-bottom: 20px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="text" name="query" placeholder="사용자 이름을 입력하세요" required>
     <button type="submit">검색</button>
 </form>
@@ -17,10 +18,12 @@
         {% if current_user and current_user['is_admin']|int == 1 %}
           {% if user['is_suspended']|int == 1 %}
             <form method="POST" action="{{ url_for('unsuspend_user', user_id=user['id']) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit">정지 해제</button>
             </form>
           {% else %}
             <form method="POST" action="{{ url_for('suspend_user', user_id=user['id']) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit">정지</button>
             </form>
           {% endif %}
